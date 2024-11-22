@@ -2,6 +2,11 @@ use anchor_lang::prelude::*;
 
 declare_id!("8TobWYYPzGLwVdNBwgsjEo52DKsZLaDDDv2CWMMTwREj");
 
+pub mod states;
+pub mod instructions;
+pub mod errors;
+pub mod constants;
+
 #[program]
 pub mod ibicash_bonding_curve {
     use super::*;
