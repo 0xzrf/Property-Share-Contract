@@ -41,3 +41,8 @@ pub struct InitProperty<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>
 }
+
+
+impl<'info>  InitProperty<'info> {
+    
+}
