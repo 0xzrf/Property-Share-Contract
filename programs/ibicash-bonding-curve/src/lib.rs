@@ -6,6 +6,7 @@ pub mod states;
 pub mod instructions;
 pub mod errors;
 pub mod constants;
+pub mod helper_functions;
 
 #[program]
 pub mod ibicash_bonding_curve {
