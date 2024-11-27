@@ -10,4 +10,6 @@ pub enum Errors {
     InvalidBasePrice,
     #[msg("Insufficient balance")]
     InsufficientFunds,
+    #[msg("Cannot sell the last share")]
+    InvalidShareAmount,
 }
