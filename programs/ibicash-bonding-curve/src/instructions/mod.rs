@@ -12,3 +12,6 @@ pub use withdraw::*;
 
 pub mod update_token;
 pub use update_token::*;
+
+pub mod initialize_config;
+pub use initialize_config::*;
