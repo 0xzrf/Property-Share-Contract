@@ -30,7 +30,7 @@ pub struct InitConfig<'info> {
         init,
         payer = owner,
         associated_token::mint = payment_token,
-        associated_token::authority = config
+        associated_token::authority = owner
     )]
     pub protocol_vault: InterfaceAccount<'info, TokenAccount>,
 

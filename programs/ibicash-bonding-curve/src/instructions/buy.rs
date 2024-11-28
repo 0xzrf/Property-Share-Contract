@@ -32,7 +32,7 @@ pub struct Buy<'info> {
     #[account(
         mut,
         associated_token::authority = config,
-        associated_token::mint = config.payment_token
+        associated_token::mint = config.owner
     )]
     pub protocol_vault: InterfaceAccount<'info, TokenAccount>,
 
@@ -71,7 +71,7 @@ pub struct Buy<'info> {
     #[account(
         mut,
         associated_token::mint = property_token,
-        associated_token::authority = property
+        associated_token::authority = property.owner
     )]
     pub property_vault: InterfaceAccount<'info, TokenAccount>,
 

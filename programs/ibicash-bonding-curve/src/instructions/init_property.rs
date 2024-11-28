@@ -31,7 +31,7 @@ pub struct InitProperty<'info> {
         init,
         payer = owner,
         associated_token::mint = payment_token,
-        associated_token::authority = property
+        associated_token::authority = owner
     )]
     pub property_vault: InterfaceAccount<'info, TokenAccount>,
     #[account(
