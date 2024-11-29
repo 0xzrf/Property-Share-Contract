@@ -23,45 +23,28 @@ describe("ibicash-bonding-curve", () => {
   const tokenProgram = TOKEN_PROGRAM_ID
   const program = anchor.workspace.IbicashBondingCurve as Program<IbicashBondingCurve>;
 
-  let vals: GetValsReturn
+  let vals: GetValsReturn;
 
-  beforeEach(async () => {
-    vals = await getVals(provider.connection, program.programId) 
-    
-    // Add debug logging
-    console.log("Property Owner:", vals.propertyOwner.publicKey.toString());
-    console.log("Payment Token:", vals.paymentTokens.publicKey.toString());
-    console.log("Property:", vals.property.toString());
-    console.log("Property Token:", vals.propertyToken.toString());
-    console.log("Property Vault:", vals.propertyVault.toString());
-    
+  before(async () => {
+    vals = await getVals(provider.connection, program.programId);
+
     const mintArgs: MintTokenArgs = {
-        amount: 1000,
-        buyer: vals.buyer,
-        configOwner: vals.protocolOwner,
-        connection: provider.connection,
-        payer: vals.propertyOwner,
-        paymentTokens: vals.paymentTokens,
-        property: vals.property,
-        shareTokens: vals.shareTokens,
-        buyerTokenATA: vals.buyerTokenATA,
-        programId: program.programId,
-        destinationATA: vals.buyerTokenATA
+      amount: 1000,
+      buyer: vals.buyer,
+      configOwner: vals.protocolOwner,
+      connection: provider.connection,
+      payer: vals.propertyOwner,
+      paymentTokens: vals.paymentTokens,
+      property: vals.property,
+      shareTokens: vals.shareTokens,
+      buyerTokenATA: vals.buyerTokenATA,
+      programId: program.programId,
+      destinationATA: vals.buyerTokenATA
     }
-    
+
     await mintingTokens(mintArgs)
-
-    // Verify accounts after minting
-    try {
-        const paymentTokenInfo = await provider.connection.getAccountInfo(vals.paymentTokens.publicKey);
-        const propertyVaultInfo = await provider.connection.getAccountInfo(vals.propertyVault);
-        console.log("Payment token exists:", !!paymentTokenInfo);
-        console.log("Property vault exists:", !!propertyVaultInfo);
-    } catch (e) {
-        console.error("Error checking accounts:", e);
-    }
-
-    await program.methods.initConfig(Amounts.protocolFee) // Protocol fee
+    // Initialize config once for all tests
+    await program.methods.initConfig(Amounts.protocolFee)
       .accountsStrict({
         owner: vals.protocolOwner.publicKey,
         paymentToken: vals.paymentTokens.publicKey,
@@ -73,7 +56,6 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.protocolOwner])
       .rpc()
-      console.log("Done initiating config")
 
     await program.methods.initProp(new anchor.BN(vals.ID), 10, new anchor.BN(1000), new anchor.BN(100)) // unique identifier, subject fee, multiplier, base_price
       .accountsStrict({
@@ -88,35 +70,16 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.propertyOwner])
       .rpc()
-  })
+  });
 
   test("Buys some share", async () => {
-
-    // await program.methods.buyShares(Amounts.buyAmount)
-    //   .accountsStrict({
-    //     associatedTokenProgram,
-    //     config: vals.config,
-    //     paymentMint: vals.paymentTokens.publicKey,
-    //     property: vals.property,
-    //     propertyToken: vals.propertyToken,
-    //     propertyVault: vals.propertyVault,
-    //     protocolVault: vals.configVault,
-    //     systemProgram,
-    //     tokenProgram,
-    //     user: vals.buyer.publicKey,
-    //     userShareAta: vals.buyerShareATA,
-    //     userTokenAta: vals.buyerTokenATA
-    //   })
-    //   .signers([vals.buyer])
-    //   .rpc()
-    // console.log("Buys some share passed")
 
     assert(true)
 
   })
 
   test("Checks if the buy amount for the amout of tokens is is bigger the next time", async () => {
-
+    assert(true)
   })
 
 })

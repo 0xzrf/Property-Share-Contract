@@ -32,38 +32,19 @@ export interface MintTokenArgs {
     destinationATA: PublicKey
 }
 
-export async function mintingTokens({connection, paymentTokens, shareTokens, configOwner, property, payer, buyer, amount}: MintTokenArgs) { 
-    // Create payment token mint
-    await createMint(
-        connection, 
-        payer,           // payer
-        payer.publicKey, // mint authority (changed from configOwner to payer)
-        null,            // freeze authority
-        6,               // decimals
-        paymentTokens    // keypair
-    )
+export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, property, payer, buyer, amount}: MintTokenArgs) { 
+    await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
     
-    // Create buyer's payment token ATA
-    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer,           // payer
-        paymentTokens.publicKey,
-        buyer.publicKey,
-        false
-    )
+    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, false)
 
-    // Mint tokens to buyer
     await mintTo(
         connection, 
         payer,
         paymentTokens.publicKey,    
         buyerPaymentATA.address,
-        payer,           // changed from configOwner to payer since we made payer the mint authority
+        configOwner,
         amount * 10 ** 6
     )
-
-    // Add a delay to ensure transaction completion
-    await new Promise(resolve => setTimeout(resolve, 1000));
 }
 
 
@@ -106,7 +87,7 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     const buyerShareATA = getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true);
     
     const configVault = getAssociatedTokenAddressSync(paymentTokens.publicKey,config, true);
-    const propertyVault = getAssociatedTokenAddressSync(propertyToken, property, true);
+    const propertyVault = getAssociatedTokenAddressSync(paymentTokens.publicKey, property, true);
     
     return {
         buyerTokenATA,
