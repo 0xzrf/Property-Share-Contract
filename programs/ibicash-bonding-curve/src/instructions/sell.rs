@@ -32,13 +32,13 @@ pub struct Sell<'info> {
     #[account(
         mut,
         associated_token::authority = config,
-        associated_token::mint = config.payment_token
+        associated_token::mint = payment_mint
     )]
     pub protocol_vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
-        seeds = [b"property", config.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
+        seeds = [b"property", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump = property.bump
     )]
     pub property: Account<'info, PropertyKey>,
@@ -49,7 +49,7 @@ pub struct Sell<'info> {
     pub payment_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
-        seeds = [b"property_tokens", config.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
+        seeds = [b"property_tokens", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump,
     )]
     pub property_token: InterfaceAccount<'info, Mint>,
@@ -139,8 +139,10 @@ impl<'info> Sell<'info> {
     }
 
     pub fn send_signed_token(&mut self, amount: u64, from: AccountInfo<'info>, to: AccountInfo<'info>, mint: AccountInfo<'info>, authority: AccountInfo<'info>, decimals: u8) -> Result<()> {
+        let owner_key = self.property.owner.key();
         let seeds = &[
             b"property".as_ref(),
+            owner_key.as_ref(),
             &self.property.id.to_le_bytes(),
             &[self.property.bump],
         ];
@@ -153,7 +155,11 @@ impl<'info> Sell<'info> {
             mint
         };
 
-        let cpi_context = CpiContext::new_with_signer(self.token_program.to_account_info(), cpi_accounts, signer_seeds);
+        let cpi_context = CpiContext::new_with_signer(
+            self.token_program.to_account_info(), 
+            cpi_accounts, 
+            signer_seeds
+        );
 
         transfer_checked(cpi_context, amount, decimals)
     }

@@ -21,9 +21,7 @@ export interface GetValsReturn {
 export interface MintTokenArgs {
     connection: anchor.web3.Connection,
     paymentTokens: Keypair, 
-    shareTokens: Keypair, 
     configOwner: Signer, 
-    property: PublicKey, 
     payer: Keypair,
     buyer: Keypair,
     amount: number,
@@ -32,10 +30,10 @@ export interface MintTokenArgs {
     destinationATA: PublicKey
 }
 
-export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, property, payer, buyer, amount}: MintTokenArgs) { 
+export async function mintingTokens({connection,paymentTokens, configOwner, payer, buyer, amount}: MintTokenArgs) { 
     await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
     
-    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, false)
+    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, true)
 
     await mintTo(
         connection, 
@@ -45,6 +43,7 @@ export async function mintingTokens({connection,paymentTokens, shareTokens, conf
         configOwner,
         amount * 10 ** 6
     )
+    return buyerPaymentATA
 }
 
 
@@ -83,11 +82,12 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     )[0]
 
 
-    const buyerTokenATA = getAssociatedTokenAddressSync(propertyToken, buyer.publicKey, true);
-    const buyerShareATA = getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true);
+    const buyerTokenATA = getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true);
+    const buyerShareATA = getAssociatedTokenAddressSync(propertyToken, buyer.publicKey, true);
     
     const configVault = getAssociatedTokenAddressSync(paymentTokens.publicKey,config, true);
     const propertyVault = getAssociatedTokenAddressSync(paymentTokens.publicKey, property, true);
+    
     
     return {
         buyerTokenATA,

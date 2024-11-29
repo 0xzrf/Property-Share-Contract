@@ -6,6 +6,7 @@ pub fn get_price(supply: u64, amount: u64, multiplier: u64, base_price: u64, dec
     require!(base_price != 0, Errors::InvalidBasePrice);
     let sum2;
     let sum1;
+ 
     if supply == 0 {
         sum1 = 0;
     } else {

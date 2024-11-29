@@ -32,13 +32,13 @@ pub struct Buy<'info> {
     #[account(
         mut,
         associated_token::authority = config,
-        associated_token::mint = config.owner
+        associated_token::mint = payment_mint
     )]
     pub protocol_vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
-        seeds = [b"property", config.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
+        seeds = [b"property", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump = property.bump
     )]
     pub property: Account<'info, PropertyKey>,
@@ -49,7 +49,7 @@ pub struct Buy<'info> {
     pub payment_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
-        seeds = [b"property_tokens", config.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
+        seeds = [b"property_tokens", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump,
     )]
     pub property_token: InterfaceAccount<'info, Mint>,
@@ -62,7 +62,8 @@ pub struct Buy<'info> {
     pub user_token_ata: InterfaceAccount<'info, TokenAccount>, // The user account to send to the vault
 
     #[account(
-        mut,
+        init_if_needed,
+        payer= user,
         associated_token::mint = property_token,
         associated_token::authority = user
     )]
@@ -70,7 +71,7 @@ pub struct Buy<'info> {
 
     #[account(
         mut,
-        associated_token::mint = property_token,
+        associated_token::mint = payment_mint,
         associated_token::authority = property
     )]
     pub property_vault: InterfaceAccount<'info, TokenAccount>,
@@ -83,6 +84,7 @@ pub struct Buy<'info> {
 impl<'info> Buy<'info> {
 
     pub fn buy_shares(&mut self, amount: u64) -> Result<()> {
+        msg!("Buy function initiated ::::::::");
         let price = get_price(self.property_token.supply, amount, self.property.multiplier, self.property.base_price, self.property_token.decimals)?;
 
         let protocol_mul = self.config.protocol_fee_percent.checked_div(
@@ -97,9 +99,11 @@ impl<'info> Buy<'info> {
         let subject_fee = price.checked_mul(subject_mul as u64).unwrap();
 
         let total = price.checked_add(protocol_fee).unwrap().checked_add(subject_fee).unwrap();
+        msg!("Calculated till total :::::::::");
 
         require!(self.user_token_ata.amount >= total, Errors::InsufficientFunds);
 
+        msg!("user to property vault txn ::::::::");
         self.send_token(
             total, 
             self.user_token_ata.to_account_info(), 
@@ -109,6 +113,7 @@ impl<'info> Buy<'info> {
             self.property_token.decimals
         )?;
 
+        msg!("property vault to protocol vault txn ::::::::::");
         self.send_signed_token(
             protocol_fee,
             self.property_vault.to_account_info(),
@@ -118,6 +123,7 @@ impl<'info> Buy<'info> {
             self.property_token.decimals
         )?;
 
+        msg!("minting the property token ::::::::::");
         self.mint_property_token(amount)?;
 
         // emiting the event
@@ -149,8 +155,10 @@ impl<'info> Buy<'info> {
     }
 
     pub fn send_signed_token(&mut self, amount: u64, from: AccountInfo<'info>, to: AccountInfo<'info>, mint: AccountInfo<'info>, authority: AccountInfo<'info>, decimals: u8) -> Result<()> {
+        let owner_key = self.property.owner.key();
         let seeds = &[
             b"property".as_ref(),
+            owner_key.as_ref(),
             &self.property.id.to_le_bytes(),
             &[self.property.bump],
         ];
@@ -170,8 +178,10 @@ impl<'info> Buy<'info> {
     
     pub fn mint_property_token(&mut self, amount: u64) -> Result<()> {
 
+        let owner_key = self.property.owner.key();
         let seeds = &[
             b"property".as_ref(),
+            owner_key.as_ref(),
             &self.property.id.to_le_bytes(),
             &[self.property.bump],
         ];

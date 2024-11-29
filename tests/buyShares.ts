@@ -4,7 +4,7 @@ import { IbicashBondingCurve } from "../target/types/ibicash_bonding_curve";
 import { getVals, GetValsReturn, MintTokenArgs, mintingTokens } from "../utils";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { TOKEN_PROGRAM_ID, getAccount } from "@solana/spl-token";
-import { test, beforeEach } from "mocha";
+import { test } from "mocha";
 import { assert } from "console";
 
 const Amounts = {
@@ -14,7 +14,6 @@ const Amounts = {
 
 describe("ibicash-bonding-curve", () => {
   // Configure the client to use the local cluster.
-  const PROTOCOL_FEE = new anchor.BN(10)
   const provider = anchor.AnchorProvider.env()
 
   anchor.setProvider(provider);
@@ -24,9 +23,10 @@ describe("ibicash-bonding-curve", () => {
   const program = anchor.workspace.IbicashBondingCurve as Program<IbicashBondingCurve>;
 
   let vals: GetValsReturn;
+  let buyerTokenATA;
 
   before(async () => {
-    vals = await getVals(provider.connection, program.programId);
+  vals = await getVals(provider.connection, program.programId);
 
     const mintArgs: MintTokenArgs = {
       amount: 1000,
@@ -35,14 +35,12 @@ describe("ibicash-bonding-curve", () => {
       connection: provider.connection,
       payer: vals.propertyOwner,
       paymentTokens: vals.paymentTokens,
-      property: vals.property,
-      shareTokens: vals.shareTokens,
       buyerTokenATA: vals.buyerTokenATA,
       programId: program.programId,
       destinationATA: vals.buyerTokenATA
     }
 
-    await mintingTokens(mintArgs)
+    buyerTokenATA = await mintingTokens(mintArgs)
     // Initialize config once for all tests
     await program.methods.initConfig(Amounts.protocolFee)
       .accountsStrict({
@@ -70,16 +68,31 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.propertyOwner])
       .rpc()
+      console.log("Done w/ before")
   });
 
   test("Buys some share", async () => {
 
+    await program.methods.buyShares(Amounts.buyAmount)
+    .accountsStrict({
+      user: vals.buyer.publicKey,
+      config: vals.config,
+      protocolVault: vals.configVault,
+      property: vals.property,
+      paymentMint: vals.paymentTokens.publicKey,
+      propertyToken: vals.propertyToken,  
+      userTokenAta: vals.buyerTokenATA,
+      userShareAta: vals.buyerShareATA,
+      propertyVault: vals.propertyVault,
+      systemProgram,
+      tokenProgram,
+      associatedTokenProgram
+    })
+    .signers([vals.buyer])
+    .rpc()
     assert(true)
 
   })
 
-  test("Checks if the buy amount for the amout of tokens is is bigger the next time", async () => {
-    assert(true)
-  })
 
 })
