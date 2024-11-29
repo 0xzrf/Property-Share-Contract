@@ -23,7 +23,7 @@ export interface MintTokenArgs {
     paymentTokens: Keypair, 
     shareTokens: Keypair, 
     configOwner: Signer, 
-    propertyOwner: PublicKey, 
+    property: PublicKey, 
     payer: Keypair,
     buyer: Keypair,
     amount: number,
@@ -32,31 +32,44 @@ export interface MintTokenArgs {
     destinationATA: PublicKey
 }
 
-export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, propertyOwner, payer, buyer, amount}: MintTokenArgs) { 
-    await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
-    await createMint(connection, payer, propertyOwner, null, 6, shareTokens)    
+export async function mintingTokens({connection, paymentTokens, shareTokens, configOwner, property, payer, buyer, amount}: MintTokenArgs) { 
+    // Create payment token mint
+    await createMint(
+        connection, 
+        payer,           // payer
+        payer.publicKey, // mint authority (changed from configOwner to payer)
+        null,            // freeze authority
+        6,               // decimals
+        paymentTokens    // keypair
+    )
     
-    const protocolVault = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, configOwner.publicKey, false)
-    const propertyVault = await getOrCreateAssociatedTokenAccount(connection, buyer, shareTokens.publicKey, propertyOwner, false)
-    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, false)
+    // Create buyer's payment token ATA
+    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payer,           // payer
+        paymentTokens.publicKey,
+        buyer.publicKey,
+        false
+    )
 
-    console.log("Cnf. Owner",configOwner.publicKey.toString())
+    // Mint tokens to buyer
     await mintTo(
         connection, 
         payer,
         paymentTokens.publicKey,    
         buyerPaymentATA.address,
-        configOwner,
+        payer,           // changed from configOwner to payer since we made payer the mint authority
         amount * 10 ** 6
     )
-    console.log('Minting done')
+
+    // Add a delay to ensure transaction completion
+    await new Promise(resolve => setTimeout(resolve, 1000));
 }
 
 
 export async function getVals(connection: anchor.web3.Connection, programId: PublicKey): Promise<GetValsReturn> {
     const protocolOwner = Keypair.generate();
     const ID = new anchor.BN(1)
-    const paymentToken = Keypair.generate();
     const buyer = Keypair.generate();
     const paymentTokens = Keypair.generate();
     const shareTokens = Keypair.generate();
@@ -81,7 +94,7 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     )[0]
 
     const propertyToken = PublicKey.findProgramAddressSync([
-        Buffer.from("property_token"),
+        Buffer.from("property_tokens"),
         propertyOwner.publicKey.toBuffer(),
         ID.toArrayLike(Buffer, "le", 8)
     ],
@@ -89,11 +102,11 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     )[0]
 
 
-    const buyerTokenATA = getAssociatedTokenAddressSync(propertyToken, buyer.publicKey);
-    const buyerShareATA = getAssociatedTokenAddressSync(paymentToken.publicKey, buyer.publicKey);
+    const buyerTokenATA = getAssociatedTokenAddressSync(propertyToken, buyer.publicKey, true);
+    const buyerShareATA = getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true);
     
-    const configVault = getAssociatedTokenAddressSync(paymentToken.publicKey, protocolOwner.publicKey);
-    const propertyVault = getAssociatedTokenAddressSync(propertyToken, propertyOwner.publicKey);
+    const configVault = getAssociatedTokenAddressSync(paymentTokens.publicKey,config, true);
+    const propertyVault = getAssociatedTokenAddressSync(propertyToken, property, true);
     
     return {
         buyerTokenATA,

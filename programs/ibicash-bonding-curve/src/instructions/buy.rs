@@ -71,7 +71,7 @@ pub struct Buy<'info> {
     #[account(
         mut,
         associated_token::mint = property_token,
-        associated_token::authority = property.owner
+        associated_token::authority = property
     )]
     pub property_vault: InterfaceAccount<'info, TokenAccount>,
 
