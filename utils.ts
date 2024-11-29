@@ -28,25 +28,27 @@ export interface MintTokenArgs {
     buyer: Keypair,
     amount: number,
     buyerTokenATA: PublicKey,
-    programId: PublicKey
+    programId: PublicKey,
+    destinationATA: PublicKey
 }
 
-export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, propertyOwner, payer, buyer, amount, buyerTokenATA, programId}: MintTokenArgs) { 
-
-    await createMint(connection, payer, configOwner, null, 6, paymentTokens, null, programId)
-    await createMint(connection, payer, propertyOwner, null, 6, shareTokens, null, programId)    
-
+export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, propertyOwner, payer, buyer, amount}: MintTokenArgs) { 
+    await createMint(connection, payer, configOwner, null, 6, paymentTokens)
+    await createMint(connection, payer, propertyOwner, null, 6, shareTokens)    
+    
     await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, configOwner, true)
     await getOrCreateAssociatedTokenAccount(connection, buyer, shareTokens.publicKey, propertyOwner, true)
-
+    console.log("Minting start")
+    console.log("Cnf. Owner",configOwner.toString(), "\nPayer", payer.publicKey.toString() )
     await mintTo(
         connection, 
         payer,
-        paymentTokens.publicKey,
+        paymentTokens.publicKey,    
         getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true),
         configOwner,
-        1000
+        amount
     )
+    console.log('Minting done')
 }
 
 
@@ -59,13 +61,9 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     const shareTokens = Keypair.generate();
     const propertyOwner = Keypair.generate();
 
-    const sig1 = await connection.requestAirdrop(protocolOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL)
-    const sig2 = await connection.requestAirdrop(buyer.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL)
-    const sig3 = await connection.requestAirdrop(propertyOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL)
-
-    await connection.confirmTransaction(sig1);
-    await connection.confirmTransaction(sig2);
-    await connection.confirmTransaction(sig3);
+    await connection.confirmTransaction(await connection.requestAirdrop(protocolOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
+    await connection.confirmTransaction(await connection.requestAirdrop(buyer.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
+    await connection.confirmTransaction(await connection.requestAirdrop(propertyOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
 
     const config = PublicKey.findProgramAddressSync([
         Buffer.from("config")

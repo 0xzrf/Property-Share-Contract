@@ -25,7 +25,7 @@ pub struct InitConfig<'info> {
         space = ProtocolConfig::INIT_SPACE + 8
     )]
     pub config: Account<'info, ProtocolConfig>,
-
+    
     #[account(
         init,
         payer = owner,
@@ -40,7 +40,7 @@ pub struct InitConfig<'info> {
 }
 
 impl<'info> InitConfig<'info> {
-    pub fn init_config(&mut self, bumps: &InitConfigBumps, protocol_fee_percent: u16) -> Result<()> {
+    pub fn config_init(&mut self, bumps: &InitConfigBumps, protocol_fee_percent: u16) -> Result<()> {
         self.config.set_inner(ProtocolConfig {
            owner: self.owner.key(),
            bump: bumps.config,

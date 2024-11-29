@@ -20,7 +20,7 @@ pub mod ibicash_bonding_curve {
     use super::*;
 
     pub fn init_config(ctx: Context<InitConfig>, protocol_fee_percent: u16)-> Result<()> {
-        ctx.accounts.init_config(&ctx.bumps, protocol_fee_percent)
+        ctx.accounts.config_init(&ctx.bumps, protocol_fee_percent)
     }
 
 

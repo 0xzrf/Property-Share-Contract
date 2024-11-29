@@ -8,7 +8,8 @@ import { test, beforeEach } from "mocha";
 import { assert } from "console";
 
 const Amounts = {
-  buyAmount: new anchor.BN(10)
+  buyAmount: new anchor.BN(10),
+  protocolFee: 2
 }
 
 describe("ibicash-bonding-curve", () => {
@@ -41,13 +42,14 @@ describe("ibicash-bonding-curve", () => {
       propertyOwner: vals.propertyOwner.publicKey,
       shareTokens: vals.shareTokens,
       buyerTokenATA: vals.buyerTokenATA,
-      programId: program.programId
+      programId: program.programId,
+      destinationATA: vals.buyerTokenATA
     }
     
     await mintingTokens(mintArgs)
     console.log("Starting config")
 
-    await program.methods.initConfig(10) // Protocol fee
+    await program.methods.initConfig(Amounts.protocolFee) // Protocol fee
       .accountsStrict({
         associatedTokenProgram,
         config: vals.config,
