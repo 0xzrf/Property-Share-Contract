@@ -35,7 +35,7 @@ describe("ibicash-bonding-curve", () => {
     const mintArgs: MintTokenArgs = {
       amount: 1000,
       buyer: vals.buyer,
-      configOwner: vals.protocolOwner.publicKey,
+      configOwner: vals.protocolOwner,
       connection: provider.connection,
       payer: vals.propertyOwner,
       paymentTokens: vals.paymentTokens,

@@ -1,4 +1,4 @@
-import {Keypair, PublicKey} from "@solana/web3.js"
+import {Keypair, PublicKey, Signer} from "@solana/web3.js"
 import * as anchor from "@coral-xyz/anchor"
 import { getAssociatedTokenAddressSync, createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 
@@ -22,7 +22,7 @@ export interface MintTokenArgs {
     connection: anchor.web3.Connection,
     paymentTokens: Keypair, 
     shareTokens: Keypair, 
-    configOwner: PublicKey, 
+    configOwner: Signer, 
     propertyOwner: PublicKey, 
     payer: Keypair,
     buyer: Keypair,
@@ -33,20 +33,21 @@ export interface MintTokenArgs {
 }
 
 export async function mintingTokens({connection,paymentTokens, shareTokens, configOwner, propertyOwner, payer, buyer, amount}: MintTokenArgs) { 
-    await createMint(connection, payer, configOwner, null, 6, paymentTokens)
+    await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
     await createMint(connection, payer, propertyOwner, null, 6, shareTokens)    
     
-    await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, configOwner, true)
-    await getOrCreateAssociatedTokenAccount(connection, buyer, shareTokens.publicKey, propertyOwner, true)
-    console.log("Minting start")
-    console.log("Cnf. Owner",configOwner.toString(), "\nPayer", payer.publicKey.toString() )
+    const protocolVault = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, configOwner.publicKey, false)
+    const propertyVault = await getOrCreateAssociatedTokenAccount(connection, buyer, shareTokens.publicKey, propertyOwner, false)
+    const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, false)
+
+    console.log("Cnf. Owner",configOwner.publicKey.toString())
     await mintTo(
         connection, 
         payer,
         paymentTokens.publicKey,    
-        getAssociatedTokenAddressSync(paymentTokens.publicKey, buyer.publicKey, true),
+        buyerPaymentATA.address,
         configOwner,
-        amount
+        amount * 10 ** 6
     )
     console.log('Minting done')
 }
