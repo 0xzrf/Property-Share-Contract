@@ -32,10 +32,11 @@ pub fn get_price(supply: u64, amount: u64, multiplier: u64, base_price: u64, dec
     if supply == 0 && amount == 1 {
         sum2 = 0;
     } else {
-        let supply_minus_one_plus_amount =
-            supply.checked_sub(1).unwrap().checked_add(amount).unwrap();
 
-        // Step 2: Calculate (supply + amount)
+        let supply_minus_one_plus_amount =
+            supply.checked_add(amount).unwrap().checked_sub(1).unwrap();
+
+        // Step 2: Calculate (supply + amount)  
         let supply_plus_amount = supply.checked_add(amount).unwrap();
 
         // Step 3: Calculate (2 * (supply - 1 + amount) + 1)
@@ -56,17 +57,16 @@ pub fn get_price(supply: u64, amount: u64, multiplier: u64, base_price: u64, dec
         sum2 = product.checked_div(6).unwrap();
     }
 
-    let difference = sum1.checked_sub(sum2).unwrap();
-
-    let price_multiplier = base_price.checked_mul(multiplier).unwrap();
+    let difference = sum2.checked_sub(sum1).unwrap();
+    let price_multiplier = base_price.checked_mul(multiplier).unwrap();    
     
     let summation = difference.checked_mul(price_multiplier).unwrap();
     let mut mult = multiplier;
     for _ in 0..decimals {
         mult = mult.checked_mul(10).unwrap();
     }
-
+    
     let scaled_summation = summation.checked_mul(mult).unwrap();
-
+   
     Ok(scaled_summation.checked_div(16000).unwrap() as u64)
 }

@@ -26,10 +26,10 @@ describe("ibicash-bonding-curve", () => {
   let buyerTokenATA;
 
   before(async () => {
-  vals = await getVals(provider.connection, program.programId);
+    vals = await getVals(provider.connection, program.programId);
 
     const mintArgs: MintTokenArgs = {
-      amount: 1000,
+      amount: 10000000,
       buyer: vals.buyer,
       configOwner: vals.protocolOwner,
       connection: provider.connection,
@@ -68,29 +68,32 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.propertyOwner])
       .rpc()
-      console.log("Done w/ before")
+    console.log("Done w/ before")
   });
 
   test("Buys some share", async () => {
 
     await program.methods.buyShares(Amounts.buyAmount)
-    .accountsStrict({
-      user: vals.buyer.publicKey,
-      config: vals.config,
-      protocolVault: vals.configVault,
-      property: vals.property,
-      paymentMint: vals.paymentTokens.publicKey,
-      propertyToken: vals.propertyToken,  
-      userTokenAta: vals.buyerTokenATA,
-      userShareAta: vals.buyerShareATA,
-      propertyVault: vals.propertyVault,
-      systemProgram,
-      tokenProgram,
-      associatedTokenProgram
-    })
-    .signers([vals.buyer])
-    .rpc()
-    assert(true)
+      .accountsStrict({
+        user: vals.buyer.publicKey,
+        config: vals.config,
+        protocolVault: vals.configVault,
+        property: vals.property,
+        paymentMint: vals.paymentTokens.publicKey,
+        propertyToken: vals.propertyToken,
+        userTokenAta: vals.buyerTokenATA,
+        userShareAta: vals.buyerShareATA,
+        propertyVault: vals.propertyVault,
+        systemProgram,
+        tokenProgram,
+        associatedTokenProgram
+      })
+      .signers([vals.buyer])
+      .rpc()
+
+      
+
+      assert(true)
 
   })
 

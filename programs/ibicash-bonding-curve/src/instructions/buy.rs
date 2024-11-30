@@ -49,6 +49,7 @@ pub struct Buy<'info> {
     pub payment_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
+        mut,
         seeds = [b"property_tokens", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump,
     )]
@@ -84,16 +85,20 @@ pub struct Buy<'info> {
 impl<'info> Buy<'info> {
 
     pub fn buy_shares(&mut self, amount: u64) -> Result<()> {
-        msg!("Buy function initiated ::::::::");
         let price = get_price(self.property_token.supply, amount, self.property.multiplier, self.property.base_price, self.property_token.decimals)?;
 
-        let protocol_mul = self.config.protocol_fee_percent.checked_div(
-            (10_u16).checked_pow(self.property_token.decimals as u32).unwrap()
-        ).unwrap();
+        let base: u64 = u64::from(10_u64);
+        let exponent: u32 = self.property_token.decimals as u32;
 
-        let subject_mul = self.property.subject_fee_percent.checked_div(
-            (10_u16).checked_pow(self.property_token.decimals as u32).unwrap()
+        let protocol_mul = (self.config.protocol_fee_percent as u64).checked_div(
+            base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
         ).unwrap();
+        msg!("Done");
+
+        let subject_mul = (self.property.subject_fee_percent as u64).checked_div(
+            base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
+        ).unwrap();
+        msg!("Done");
 
         let protocol_fee = price.checked_mul(protocol_mul as u64).unwrap();
         let subject_fee = price.checked_mul(subject_mul as u64).unwrap();
