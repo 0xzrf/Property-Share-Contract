@@ -15,7 +15,8 @@ export interface GetValsReturn {
     protocolOwner: Keypair;
     buyer: Keypair;
     ID: anchor.BN;
-    shareTokens: Keypair
+    shareTokens: Keypair,
+    withdrawDestinationATA: PublicKey
 }
 
 export interface MintTokenArgs {
@@ -88,6 +89,8 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
     
     const configVault = getAssociatedTokenAddressSync(paymentTokens.publicKey,config, true);
     const propertyVault = getAssociatedTokenAddressSync(paymentTokens.publicKey, property, true);
+
+    const withdrawDestinationATA = getAssociatedTokenAddressSync(paymentTokens.publicKey, configOwner.publicKey, true);
     
     
     return {
@@ -102,6 +105,7 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
         buyer,
         ID,
         shareTokens,
-        propertyOwner
+        propertyOwner,
+        withdrawDestinationATA
     }
 }

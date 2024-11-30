@@ -13,7 +13,8 @@ use instructions::{
     init_property::*,
     update_token::*,
     buy::*,
-    sell::*
+    sell::*,
+    withdraw::*
 };
 
 #[program]
@@ -35,6 +36,10 @@ pub mod ibicash_bonding_curve {
 
     pub fn sell_shares(ctx: Context<Sell>,amount: u64) -> Result<()> {
         ctx.accounts.sell_shares(amount)
+    }
+
+    pub fn withdraw_shares(ctx: Context<Withdraw>) -> Result<()> {
+        ctx.accounts.withdraw()
     }
 
     pub fn token_update(ctx: Context<UpdateTokens>) -> Result<()> {

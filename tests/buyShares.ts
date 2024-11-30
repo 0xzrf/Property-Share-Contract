@@ -96,5 +96,24 @@ describe("ibicash-bonding-curve", () => {
       assert(true)
   })
 
+  test("Withdraw", async () => {
+
+    await program.methods.withdrawShares()
+    .accountsStrict({
+      owner: vals.protocolOwner.publicKey,
+      protocolConfig: vals.config,
+      paymentToken: paymentTokens.publicKey,
+      protocolVault: vals.configVault,
+      withdrawDestination: vals.protocolOwner.publicKey,
+      destinationAta: vals.withdrawDestinationATA,
+      tokenProgram,
+      systemProgram,
+      associatedTokenProgram
+    })
+    .signers([vals.protocolOwner])
+    .rpc()
+
+  })  
+
 
 })

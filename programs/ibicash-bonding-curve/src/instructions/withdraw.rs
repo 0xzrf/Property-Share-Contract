@@ -1,11 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{
-        TokenAccount,
-        Mint,
-        TransferChecked,
-        transfer_checked,
-        TokenInterface
-    }
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{
+        transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked
+    }}
 ;
 use crate::states::protocol_config::ProtocolConfig;
 
@@ -24,7 +20,7 @@ pub struct Withdraw<'info>{
     pub owner: Signer<'info>,
 
     #[account(
-        seeds = [b"cofig"],
+        seeds = [b"config"],
         bump = protocol_config.bump,
         has_one = owner
     )]
@@ -42,13 +38,22 @@ pub struct Withdraw<'info>{
     )]
     pub protocol_vault: InterfaceAccount<'info, TokenAccount>,
 
+    /// CHECK: Safe because we verify it matches protocol_config.withdraw_destination
     #[account(
-        mut, 
+        constraint = withdraw_destination.key() == protocol_config.withdraw_destination
+    )]
+    pub withdraw_destination: AccountInfo<'info>,
+
+    #[account(
+        init_if_needed, 
+        payer = owner,
         associated_token::mint = payment_token,
-        associated_token::authority = protocol_config.withdraw_destination
+        associated_token::authority = withdraw_destination
     )]
     pub destination_ata: InterfaceAccount<'info, TokenAccount>,
-    pub token_program: Interface<'info, TokenInterface>
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>
 }
 
 
@@ -65,10 +70,8 @@ impl<'info> Withdraw<'info> {
     }
 
     pub fn send_signed_tokes(&mut self, from: AccountInfo<'info>, to: AccountInfo<'info>, amount: u64) -> Result<()> {
-        let seeds = &[
-            b"config".as_ref(),
-            &[self.protocol_config.bump],
-        ];
+        let bump = &[self.protocol_config.bump];
+        let seeds = &[b"config" as &[u8], bump];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_accounts = TransferChecked {
