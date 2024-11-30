@@ -93,12 +93,10 @@ impl<'info> Buy<'info> {
         let protocol_mul = (self.config.protocol_fee_percent as u64).checked_div(
             base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
         ).unwrap();
-        msg!("Done");
 
         let subject_mul = (self.property.subject_fee_percent as u64).checked_div(
             base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
         ).unwrap();
-        msg!("Done");
 
         let protocol_fee = price.checked_mul(protocol_mul as u64).unwrap();
         let subject_fee = price.checked_mul(subject_mul as u64).unwrap();
@@ -168,7 +166,7 @@ impl<'info> Buy<'info> {
             &[self.property.bump],
         ];
         let signer_seeds = &[&seeds[..]];
-
+        
         let cpi_accounts = TransferChecked {
             authority,
             from,

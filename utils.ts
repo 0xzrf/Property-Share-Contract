@@ -1,7 +1,8 @@
 import {Keypair, PublicKey, Signer} from "@solana/web3.js"
 import * as anchor from "@coral-xyz/anchor"
 import { getAssociatedTokenAddressSync, createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
-
+export const paymentTokens = Keypair.generate()
+export const configOwner = Keypair.generate()
 export interface GetValsReturn {
     buyerTokenATA: PublicKey; // buyer payment token ata
     buyerShareATA: PublicKey; // buyer share token ata
@@ -14,7 +15,6 @@ export interface GetValsReturn {
     protocolOwner: Keypair;
     buyer: Keypair;
     ID: anchor.BN;
-    paymentTokens: Keypair,
     shareTokens: Keypair
 }
 
@@ -27,11 +27,14 @@ export interface MintTokenArgs {
     amount: number,
     buyerTokenATA: PublicKey,
     programId: PublicKey,
-    destinationATA: PublicKey
+    destinationATA: PublicKey,
+    createMnt: boolean
 }
 
-export async function mintingTokens({connection,paymentTokens, configOwner, payer, buyer, amount}: MintTokenArgs) { 
-    await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
+export async function mintingTokens({connection,paymentTokens, configOwner, payer, buyer, amount, createMnt}: MintTokenArgs) { 
+    if (createMnt) {
+        await createMint(connection, payer, configOwner.publicKey, null, 6, paymentTokens)
+    }
     
     const buyerPaymentATA = await getOrCreateAssociatedTokenAccount(connection, buyer, paymentTokens.publicKey, buyer.publicKey, true)
 
@@ -48,14 +51,12 @@ export async function mintingTokens({connection,paymentTokens, configOwner, paye
 
 
 export async function getVals(connection: anchor.web3.Connection, programId: PublicKey): Promise<GetValsReturn> {
-    const protocolOwner = Keypair.generate();
     const ID = new anchor.BN(1)
     const buyer = Keypair.generate();
-    const paymentTokens = Keypair.generate();
     const shareTokens = Keypair.generate();
     const propertyOwner = Keypair.generate();
 
-    await connection.confirmTransaction(await connection.requestAirdrop(protocolOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
+    await connection.confirmTransaction(await connection.requestAirdrop(configOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
     await connection.confirmTransaction(await connection.requestAirdrop(buyer.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
     await connection.confirmTransaction(await connection.requestAirdrop(propertyOwner.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL));
 
@@ -97,10 +98,9 @@ export async function getVals(connection: anchor.web3.Connection, programId: Pub
         property,
         propertyToken,
         config, 
-        protocolOwner, 
+        protocolOwner: configOwner, 
         buyer,
         ID,
-        paymentTokens,
         shareTokens,
         propertyOwner
     }

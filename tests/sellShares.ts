@@ -8,8 +8,9 @@ import { test } from "mocha";
 import { assert } from "console";
 
 const Amounts = {
-  buyAmount: new anchor.BN(1),
-  protocolFee: 2
+  buyAmount: new anchor.BN(5),
+  protocolFee: 2,
+  sellAmount: new anchor.BN(2)
 }
 
 describe("ibicash-bonding-curve", () => {
@@ -24,11 +25,9 @@ describe("ibicash-bonding-curve", () => {
 
   let vals: GetValsReturn;
 
-
   before(async () => {
     vals = await getVals(provider.connection, program.programId);
-
-    console.log(vals.config.toString(), "VALS FROM BUY");
+    console.log("config from sell::::", vals.config.toString())
 
     const mintArgs: MintTokenArgs = {
       amount: 10000000,
@@ -40,23 +39,36 @@ describe("ibicash-bonding-curve", () => {
       buyerTokenATA: vals.buyerTokenATA,
       programId: program.programId,
       destinationATA: vals.buyerTokenATA,
-      createMnt: true
+      createMnt: false
     }
 
+    console.log("propertyOwner:", vals.propertyOwner.publicKey.toString());
+    console.log("property:", vals.property.toString());
+    console.log("paymentToken:", paymentTokens.publicKey.toString());
+    console.log("propertyVault:", vals.propertyVault.toString());
+    console.log("propertyToken:", vals.propertyToken.toString());
+    console.log("systemProgram:", systemProgram.toString());
+    console.log("tokenProgram:", tokenProgram.toString());
+    console.log("associatedTokenProgram:", associatedTokenProgram.toString());
+    
     await mintingTokens(mintArgs)
+    console.log("minting start!!")
     // Initialize config once for all tests
-    await program.methods.initConfig(Amounts.protocolFee)
-      .accountsStrict({
-        owner: vals.protocolOwner.publicKey,
-        paymentToken: paymentTokens.publicKey,
-        config: vals.config,
-        protocolVault: vals.configVault,
-        systemProgram,
-        tokenProgram,
-        associatedTokenProgram
-      })
-      .signers([vals.protocolOwner])
-      .rpc()
+    // await program.methods.initConfig(Amounts.protocolFee)
+    //   .accountsStrict({
+    //     owner: vals.protocolOwner.publicKey,
+    //     paymentToken: vals.paymentTokens.publicKey,
+    //     config: vals.config,
+    //     protocolVault: vals.configVault,
+    //     systemProgram,
+    //     tokenProgram,
+    //     associatedTokenProgram
+    //   })
+    //   .signers([vals.protocolOwner])
+    //   .rpc()
+
+    
+
 
     await program.methods.initProp(new anchor.BN(vals.ID), 10, new anchor.BN(1000), new anchor.BN(100)) // unique identifier, subject fee, multiplier, base_price
       .accountsStrict({
@@ -71,12 +83,9 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.propertyOwner])
       .rpc()
-    console.log("Done w/ before")
-  });
-
-  test("Buys some share", async () => {
-
-    await program.methods.buyShares(Amounts.buyAmount)
+      
+      console.log("done initing prop")
+      await program.methods.buyShares(Amounts.buyAmount)
       .accountsStrict({
         user: vals.buyer.publicKey,
         config: vals.config,
@@ -93,7 +102,31 @@ describe("ibicash-bonding-curve", () => {
       })
       .signers([vals.buyer])
       .rpc()
-      assert(true)
+    console.log("Done w/ before")
+  });
+
+  test("sell some share", async () => {
+
+    await program.methods.sellShares(Amounts.sellAmount)
+    .accountsStrict({
+      seller: vals.buyer.publicKey,
+      config: vals.config,
+      protocolVault: vals.configVault,
+      property: vals.property,
+      paymentMint: paymentTokens.publicKey,
+      propertyToken: vals.propertyToken,
+      sellerTokenAta: vals.buyerTokenATA,
+      sellerShareAta: vals.buyerShareATA,
+      propertyVault: vals.propertyVault,
+      systemProgram,
+      tokenProgram,
+      associatedTokenProgram
+    })
+    .signers([vals.buyer])
+    .rpc()
+    
+   
+    assert(true)
   })
 
 

@@ -49,18 +49,12 @@ pub struct Sell<'info> {
     pub payment_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
+        mut,
         seeds = [b"property_tokens", property.owner.key().as_ref(), property.id.to_le_bytes().as_ref()],
         bump,
     )]
     pub property_token: InterfaceAccount<'info, Mint>,
 
-    #[account(
-        mut,
-        associated_token::mint = property_token,
-        associated_token::authority = seller
-    )]
-    pub seller_share_ata: InterfaceAccount<'info, TokenAccount>,  // The seller's token account for holding the property shares
-    
     #[account(
         mut,
         associated_token::mint = payment_mint,
@@ -71,6 +65,13 @@ pub struct Sell<'info> {
     #[account(
         mut,
         associated_token::mint = property_token,
+        associated_token::authority = seller
+    )]
+    pub seller_share_ata: InterfaceAccount<'info, TokenAccount>,  // The seller's token account for holding the property shares
+
+    #[account(
+        mut,
+        associated_token::mint = payment_mint,
         associated_token::authority = property
     )]
     pub property_vault: InterfaceAccount<'info, TokenAccount>,
@@ -84,24 +85,31 @@ impl<'info> Sell<'info> {
 
     pub fn sell_shares(&mut self, amount: u64) -> Result<()> {
         require!(self.property_token.supply > amount, Errors::InvalidShareAmount);
+        require!(self.seller_share_ata.amount >= amount, Errors::InsufficientFunds);
         // how should I bring the shareBalance
 
-        let price = get_price(self.property_token.supply, amount, self.property.multiplier, self.property.base_price, self.property_token.decimals)?;
+        let price = get_price(self.property_token.supply - amount, amount, self.property.multiplier, self.property.base_price, self.property_token.decimals)?;
 
-        let protocol_mul = self.config.protocol_fee_percent.checked_div(
-            (10_u16).checked_pow(self.property_token.decimals as u32).unwrap()
+        let base: u64 = u64::from(10_u64);
+        let exponent: u32 = self.property_token.decimals as u32;
+
+        let protocol_mul = (self.config.protocol_fee_percent as u64).checked_div(
+            base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
         ).unwrap();
 
-        let subject_mul = self.property.subject_fee_percent.checked_div(
-            (10_u16).checked_pow(self.property_token.decimals as u32).unwrap()
+        let subject_mul = (self.property.subject_fee_percent as u64).checked_div(
+            base.checked_pow(exponent).expect("Overflow occurred while calculating power for Protocol multiply")
         ).unwrap();
 
         let protocol_fee = price.checked_mul(protocol_mul as u64).unwrap();
         let subject_fee = price.checked_mul(subject_mul as u64).unwrap();
 
         let user_receives = price.checked_sub(protocol_fee).unwrap().checked_sub(subject_fee).unwrap();
-
         // property vault sends the user_receives amount to the seller's ata
+        // msg!("Done");
+
+        msg!("User receives: {}, amount: {}", user_receives, self.property_vault.amount);
+
         self.send_signed_token(
             user_receives, 
             self.property_vault.to_account_info(), 
@@ -109,8 +117,8 @@ impl<'info> Sell<'info> {
             self.payment_mint.to_account_info(), 
             self.property.to_account_info(), 
             self.property_token.decimals
-        )?;     
-
+        )?; 
+        
         // property vault sends the protocol fee to the protocol vault
         self.send_signed_token(
             protocol_fee,
@@ -122,6 +130,8 @@ impl<'info> Sell<'info> {
         )?;
 
         // burning the property_token since user sold the shares
+        
+        
         self.burn_property_token(amount)?;
 
         // emiting the event
@@ -165,19 +175,14 @@ impl<'info> Sell<'info> {
     }
 
     pub fn burn_property_token(&mut self, amount: u64) -> Result<()> {
-        let seeds = &[
-            b"config".as_ref(),
-            &[self.config.bump],
-        ];
-        let signer_seeds = &[&seeds[..]];
 
         let cpi_accounts = Burn {
             mint: self.property_token.to_account_info(),
             from: self.seller_share_ata.to_account_info(),
-            authority: self.config.to_account_info()
+            authority: self.seller.to_account_info()
         };
 
-        let cpi_cotext = CpiContext::new_with_signer(self.token_program.to_account_info(), cpi_accounts, signer_seeds);
+        let cpi_cotext = CpiContext::new(self.token_program.to_account_info(), cpi_accounts);
 
         burn(cpi_cotext, amount)
     }
