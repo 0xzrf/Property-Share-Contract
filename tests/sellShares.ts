@@ -78,7 +78,7 @@ describe("SELL INSTRUCT TESTING", () => {
 
   test("to check the sell instruction is showing expected behaviour", async () => {
 
-    // const userAtaBefore = await getAccount(provider.connection)
+    const userTokenAtaBefore = await getAccount(provider.connection, vals.buyerTokenATA);
 
     await program.methods.sellShares(Amounts.sellAmount)
     .accountsStrict({
@@ -98,7 +98,9 @@ describe("SELL INSTRUCT TESTING", () => {
     .signers([vals.buyer])
     .rpc()
 
-
+    const userAfterTokenATA = await getAccount(provider.connection, vals.buyerTokenATA);
+    const userAfterShareATA = await getAccount(provider.connection, vals.buyerShareATA);
+    
     
    
     assert(true)
