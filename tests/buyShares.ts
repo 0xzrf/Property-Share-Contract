@@ -113,7 +113,6 @@ describe("ibicash-bonding-curve", () => {
     .signers([vals.protocolOwner])
     .rpc()
 
-  })  
-
+  })
 
 })

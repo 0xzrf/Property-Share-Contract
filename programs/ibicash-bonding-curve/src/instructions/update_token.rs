@@ -11,19 +11,13 @@ pub struct UpdateTokens<'info> {
     pub owner: Signer<'info>,
     
     #[account(
+        mut,
         seeds = [b"config"],
         bump = config.bump
     )]
     pub config: Account<'info, ProtocolConfig>,
 
-    #[account(
-        init_if_needed, 
-        payer = owner,
-        mint::decimals = 6,
-        mint::authority = owner,
-    )]
     pub new_mint: InterfaceAccount<'info, Mint>,
-    pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>
 }
 
