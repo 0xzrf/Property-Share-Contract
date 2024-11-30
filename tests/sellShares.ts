@@ -8,12 +8,12 @@ import { test } from "mocha";
 import { assert } from "console";
 
 const Amounts = {
-  buyAmount: new anchor.BN(5),
+  buyAmount: new anchor.BN(10),
   protocolFee: 2,
   sellAmount: new anchor.BN(2)
 }
 
-describe("ibicash-bonding-curve", () => {
+describe("SELL INSTRUCT TESTING", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env()
 
@@ -27,8 +27,7 @@ describe("ibicash-bonding-curve", () => {
 
   before(async () => {
     vals = await getVals(provider.connection, program.programId);
-    console.log("config from sell::::", vals.config.toString())
-
+  
     const mintArgs: MintTokenArgs = {
       amount: 10000000,
       buyer: vals.buyer,
@@ -43,19 +42,6 @@ describe("ibicash-bonding-curve", () => {
     }
     
     await mintingTokens(mintArgs)
-    // Initialize config once for all tests
-    // await program.methods.initConfig(Amounts.protocolFee)
-    //   .accountsStrict({
-    //     owner: vals.protocolOwner.publicKey,
-    //     paymentToken: vals.paymentTokens.publicKey,
-    //     config: vals.config,
-    //     protocolVault: vals.configVault,
-    //     systemProgram,
-    //     tokenProgram,
-    //     associatedTokenProgram
-    //   })
-    //   .signers([vals.protocolOwner])
-    //   .rpc()
 
     await program.methods.initProp(new anchor.BN(vals.ID), 10, new anchor.BN(1000), new anchor.BN(100)) // unique identifier, subject fee, multiplier, base_price
       .accountsStrict({
@@ -90,7 +76,9 @@ describe("ibicash-bonding-curve", () => {
       .rpc()
   });
 
-  test("sell some share", async () => {
+  test("to check the sell instruction is showing expected behaviour", async () => {
+
+    // const userAtaBefore = await getAccount(provider.connection)
 
     await program.methods.sellShares(Amounts.sellAmount)
     .accountsStrict({
@@ -109,6 +97,8 @@ describe("ibicash-bonding-curve", () => {
     })
     .signers([vals.buyer])
     .rpc()
+
+
     
    
     assert(true)

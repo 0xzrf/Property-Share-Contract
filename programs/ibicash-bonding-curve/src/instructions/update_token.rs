@@ -21,7 +21,6 @@ pub struct UpdateTokens<'info> {
     pub token_program: Interface<'info, TokenInterface>
 }
 
-
 impl<'info> UpdateTokens<'info> {
     pub fn update_token(&mut self) -> Result<()> {
 

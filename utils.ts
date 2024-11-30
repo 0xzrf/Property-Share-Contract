@@ -47,7 +47,6 @@ export async function mintingTokens({connection,paymentTokens, configOwner, paye
         configOwner,
         amount * 10 ** 6
     )
-    return buyerPaymentATA
 }
 
 
