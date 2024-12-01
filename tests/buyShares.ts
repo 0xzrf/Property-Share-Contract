@@ -29,8 +29,6 @@ describe("BUY INSTRUCT TESTING", () => {
   before(async () => {
     vals = await getVals(provider.connection, program.programId);
 
-    console.log(vals.config.toString(), "VALS FROM BUY");
-
     const mintArgs: MintTokenArgs = {
       amount: 10000000000,
       buyer: vals.buyer,
@@ -72,7 +70,6 @@ describe("BUY INSTRUCT TESTING", () => {
       })
       .signers([vals.propertyOwner])
       .rpc()
-    console.log("Done w/ before")
   });
 
   test("Buys some share", async () => {
@@ -148,9 +145,6 @@ describe("BUY INSTRUCT TESTING", () => {
       const userTokenATAAfter = await getAccount(provider.connection, vals.buyerTokenATA)
 
       const amount2 = Number(userTokenATABefore.amount.toString()) - Number(userTokenATAAfter.amount.toString())
-
-      console.log("First time amount", amount1, "\nSecond time amount", amount2)
-
       assert(amount1 < amount2)
     } catch (err) {
       console.error("An error occured", err);
@@ -193,13 +187,11 @@ describe("BUY INSTRUCT TESTING", () => {
         })
         .signers([newBuyer])
         .rpc()
-      console.log("Error never occured")
+      
       assert(false, "Expected this function to fail")
     } catch (err) {
       assert(true, "failed successfully")
     }
-
-
   })
 
   test("Withdraw works correctly", async () => {

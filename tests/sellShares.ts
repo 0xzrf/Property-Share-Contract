@@ -3,7 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { IbicashBondingCurve } from "../target/types/ibicash_bonding_curve";
 import { getVals, GetValsReturn, MintTokenArgs, mintingTokens, paymentTokens } from "../utils";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
-import { TOKEN_PROGRAM_ID, getAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, getAccount, getMint } from "@solana/spl-token";
 import { test } from "mocha";
 import { assert } from "console";
 
@@ -77,8 +77,9 @@ describe("SELL INSTRUCT TESTING", () => {
   });
 
   test("to check the sell instruction is showing expected behaviour", async () => {
-
     const userTokenAtaBefore = await getAccount(provider.connection, vals.buyerTokenATA);
+    const userShareAtaBefore = await getAccount(provider.connection, vals.buyerShareATA);
+    const propertyTokenBefore = await getMint(provider.connection, vals.propertyToken);
 
     await program.methods.sellShares(Amounts.sellAmount)
     .accountsStrict({
@@ -100,11 +101,77 @@ describe("SELL INSTRUCT TESTING", () => {
 
     const userAfterTokenATA = await getAccount(provider.connection, vals.buyerTokenATA);
     const userAfterShareATA = await getAccount(provider.connection, vals.buyerShareATA);
+    const propertyTokenAfter = await getMint(provider.connection, vals.propertyToken);
     
-    
-   
-    assert(true)
+    assert(
+      userAfterShareATA.amount === userShareAtaBefore.amount - BigInt(Amounts.sellAmount.toString()),
+      "Share balance should decrease by sell amount"
+    );
+
+    assert(
+      userAfterTokenATA.amount > userTokenAtaBefore.amount,
+      "Token balance should increase after sell"
+    );
+
+    assert(
+      propertyTokenAfter.supply === propertyTokenBefore.supply - BigInt(Amounts.sellAmount.toString()),
+      "Total supply should decrease by sell amount"
+    );
+  });
+
+  test("throw InvalidShareAmount error", async() => {
+    try {
+      const propertyToken = await getMint(provider.connection, vals.propertyToken);
+      await program.methods.sellShares(new anchor.BN((propertyToken).supply.toString()))
+    .accountsStrict({
+      seller: vals.buyer.publicKey,
+      config: vals.config,
+      protocolVault: vals.configVault,
+      property: vals.property,
+      paymentMint: paymentTokens.publicKey,
+      propertyToken: vals.propertyToken,
+      sellerTokenAta: vals.buyerTokenATA,
+      sellerShareAta: vals.buyerShareATA,
+      propertyVault: vals.propertyVault,
+      systemProgram,
+      tokenProgram,
+      associatedTokenProgram
+    })
+    .signers([vals.buyer])
+    .rpc()
+
+      assert(false, "Should throw InvalidShareAmount error")
+    } catch(e) {
+      assert(e instanceof Error && e.message.includes("InvalidShareAmount"), "Should throw InvalidShareAmount error")
+    }
   })
 
+  test("throw Insufficient error", async() => {
+    const userShareATA = await getAccount(provider.connection, vals.buyerShareATA);
 
+    try {
+     
+      await program.methods.sellShares(new anchor.BN(userShareATA.amount.toString()).addn(5))
+    .accountsStrict({
+      seller: vals.buyer.publicKey,
+      config: vals.config,
+      protocolVault: vals.configVault,
+      property: vals.property,
+      paymentMint: paymentTokens.publicKey,
+      propertyToken: vals.propertyToken,
+      sellerTokenAta: vals.buyerTokenATA,
+      sellerShareAta: vals.buyerShareATA,
+      propertyVault: vals.propertyVault,
+      systemProgram,
+      tokenProgram,
+      associatedTokenProgram
+    })
+    .signers([vals.buyer])
+    .rpc()
+
+      assert(false, "Should throw InvalidShareAmount error")
+    } catch(e) {
+      assert(e instanceof Error && e.message.includes("InvalidShareAmount"), "Should throw InvalidShareAmount error")
+    }
+  })
 })

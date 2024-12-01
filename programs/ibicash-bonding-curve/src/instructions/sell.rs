@@ -86,8 +86,7 @@ impl<'info> Sell<'info> {
     pub fn sell_shares(&mut self, amount: u64) -> Result<()> {
         require!(self.property_token.supply > amount, Errors::InvalidShareAmount);
         require!(self.seller_share_ata.amount >= amount, Errors::InsufficientFunds);
-        // how should I bring the shareBalance
-
+        
         let price = get_price(self.property_token.supply - amount, amount, self.property.multiplier, self.property.base_price, self.property_token.decimals)?;
 
         let base: u64 = u64::from(10_u64);
@@ -174,7 +173,15 @@ impl<'info> Sell<'info> {
         transfer_checked(cpi_context, amount, decimals)
     }
 
-    pub fn burn_property_token(&mut self, amount: u64) -> Result<()> {
+    pub fn burn_property_token(&mut self, amount: u64) -> Result<()> {        
+    
+        let owner_key = self.property.owner.key();
+        let seeds = &[
+            b"property".as_ref(),
+            owner_key.as_ref(),
+            &self.property.id.to_le_bytes(),
+            &[self.property.bump],
+        ];    let signer_seeds = &[&seeds[..]];
 
         let cpi_accounts = Burn {
             mint: self.property_token.to_account_info(),
@@ -182,8 +189,8 @@ impl<'info> Sell<'info> {
             authority: self.seller.to_account_info()
         };
 
-        let cpi_cotext = CpiContext::new(self.token_program.to_account_info(), cpi_accounts);
+        let cpi_context = CpiContext::new_with_signer(self.token_program.to_account_info(), cpi_accounts, signer_seeds);
 
-        burn(cpi_cotext, amount)
+        burn(cpi_context, amount)
     }
 }
